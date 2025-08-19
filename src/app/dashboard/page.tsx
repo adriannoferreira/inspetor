@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getSupabaseClient, withAuth } from '@/lib/supabase-client';
+import { withAuth } from '@/lib/supabase-client';
 import { Users, MessageSquare, Settings, TrendingUp, Activity } from 'lucide-react';
 
 interface Stats {
@@ -31,7 +31,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const result = await withAuth(async (supabase, session) => {
+        const result = await withAuth(async (supabase) => {
           // Buscar estatísticas
           const [usersResult, conversationsResult, messagesResult, activeUsersResult] = await Promise.all([
             supabase.from('profiles').select('id', { count: 'exact', head: true }),
@@ -53,7 +53,7 @@ export default function AdminDashboard() {
         }
 
         // Buscar atividade recente
-        const activityResult = await withAuth(async (supabase, session) => {
+        const activityResult = await withAuth(async (supabase) => {
           const { data: recentConversations } = await supabase
             .from('conversations')
             .select(`

@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { getSupabaseClient } from '@/lib/supabase-client';
-import { Settings, Save, RefreshCw, Webhook, Database, Shield, Bell, Users, Code, Plus, Edit, Trash2, Upload, Key, Copy, CheckCircle, ExternalLink } from 'lucide-react';
+import { Settings, Save, RefreshCw, Webhook, Database, Shield, Users, Code, Plus, Edit, Trash2, Upload, Key, Copy, CheckCircle, ExternalLink } from 'lucide-react';
 
 interface SystemSetting {
   key: string;
@@ -29,7 +30,7 @@ interface Agent {
   description: string;
   avatar_url: string;
   system_prompt: string;
-  payload: any;
+  payload: Record<string, unknown>;
   is_active: boolean;
   agent_type: 'advogado' | 'contador' | 'consultor' | 'geral';
   created_at: string;
@@ -70,9 +71,9 @@ export default function SystemSettings() {
   useEffect(() => {
     fetchSettings();
     fetchAgents();
-  }, []);
+  }, [fetchSettings, fetchAgents]);
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -84,13 +85,13 @@ export default function SystemSettings() {
         return;
       }
 
-      const settingsObj: any = { ...settings };
+      const settingsObj: Record<string, unknown> = { ...settings };
       data?.forEach((setting: SystemSetting) => {
         try {
           // Parse do valor JSONB
           const parsedValue = JSON.parse(setting.value);
           settingsObj[setting.key] = parsedValue;
-        } catch (error) {
+        } catch {
           // Fallback para valores que não são JSON válidos
           settingsObj[setting.key] = setting.value;
         }
@@ -102,9 +103,9 @@ export default function SystemSettings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase, settings]);
 
-  const fetchAgents = async () => {
+  const fetchAgents = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('agents')
@@ -117,10 +118,10 @@ export default function SystemSettings() {
       }
 
       setAgents(data || []);
-    } catch (error) {
-      console.error('Erro ao buscar agentes:', error);
+    } catch {
+      console.error('Erro ao buscar agentes:');
     }
-  };
+  }, [supabase]);
 
   const saveSettings = async () => {
     try {
@@ -752,7 +753,7 @@ export default function SystemSettings() {
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
                             {agent.avatar_url ? (
-                              <img className="h-10 w-10 rounded-full" src={agent.avatar_url} alt={agent.name} />
+                              <Image className="h-10 w-10 rounded-full" src={agent.avatar_url} alt={agent.name} width={40} height={40} />
                             ) : (
                               <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
                                 <Users className="h-5 w-5 text-gray-600" />
@@ -828,7 +829,7 @@ export default function SystemSettings() {
               <div key={agent.id} className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center mb-4">
                   {agent.avatar_url ? (
-                    <img className="h-8 w-8 rounded-full mr-3" src={agent.avatar_url} alt={agent.name} />
+                    <Image className="h-8 w-8 rounded-full mr-3" src={agent.avatar_url} alt={agent.name} width={32} height={32} />
                   ) : (
                     <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center mr-3">
                       <Users className="h-4 w-4 text-gray-600" />
@@ -859,7 +860,7 @@ export default function SystemSettings() {
             <div className="text-center py-12">
               <Code className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum agente encontrado</h3>
-              <p className="mt-1 text-sm text-gray-500">Crie agentes na aba "Agentes" para gerenciar seus payloads.</p>
+              <p className="mt-1 text-sm text-gray-500">Crie agentes na aba &quot;Agentes&quot; para gerenciar seus payloads.</p>
             </div>
           )}
         </div>
@@ -920,10 +921,12 @@ export default function SystemSettings() {
                   )}
                   {editingAgent?.avatar_url && (
                     <div className="mt-2">
-                      <img 
+                      <Image 
                         src={editingAgent.avatar_url} 
                         alt="Preview" 
                         className="w-16 h-16 rounded-full object-cover"
+                        width={64}
+                        height={64}
                       />
                     </div>
                   )}
@@ -1001,7 +1004,7 @@ export default function SystemSettings() {
                     try {
                       const parsed = JSON.parse(e.target.value);
                       setSelectedAgent(prev => ({ ...prev!, payload: parsed }));
-                    } catch (error) {
+                    } catch {
                       // Ignore invalid JSON while typing
                     }
                   }}

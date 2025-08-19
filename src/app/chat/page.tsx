@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
+import Image from 'next/image';
 import { useChatStore, convertDatabaseAgentToStoreAgent } from '@/stores/chatStore';
 import ChatMessage from '@/components/chat/ChatMessage';
 import ChatInput from '@/components/chat/ChatInput';
@@ -416,9 +417,11 @@ export default function ChatPage() {
                   <div className="flex items-center gap-4">
                     <div className={`h-14 w-14 rounded-full flex items-center justify-center ${a.bgColor} overflow-hidden`}>
                       {a.avatar_url ? (
-                        <img 
+                        <Image 
                           src={a.avatar_url} 
                           alt={a.name}
+                          width={56}
+                          height={56}
                           className="w-full h-full object-cover rounded-full"
                         />
                       ) : (
@@ -457,9 +460,11 @@ export default function ChatPage() {
             </button>
             <div className={`h-10 w-10 rounded-full flex items-center justify-center ${selectedAgent.bgColor} overflow-hidden`}>
               {selectedAgent.avatar_url ? (
-                <img 
+                <Image 
                   src={selectedAgent.avatar_url} 
                   alt={selectedAgent.name}
+                  width={40}
+                  height={40}
                   className="w-full h-full object-cover rounded-full"
                 />
               ) : (
@@ -508,9 +513,11 @@ export default function ChatPage() {
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className={`h-20 w-20 rounded-full flex items-center justify-center ${selectedAgent.bgColor} mb-4 overflow-hidden`}>
               {selectedAgent.avatar_url ? (
-                <img 
+                <Image 
                   src={selectedAgent.avatar_url} 
                   alt={selectedAgent.name}
+                  width={80}
+                  height={80}
                   className="w-full h-full object-cover rounded-full"
                 />
               ) : (

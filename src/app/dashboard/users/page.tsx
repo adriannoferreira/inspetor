@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Users, Edit, UserCheck, UserX, Search } from 'lucide-react';
 import { getSupabaseClient } from '@/lib/supabase-client';
 
@@ -27,7 +27,7 @@ export default function UsersManagement() {
     fetchUsers();
   }, [fetchUsers]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -46,7 +46,7 @@ export default function UsersManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase]);
 
   const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
     try {
