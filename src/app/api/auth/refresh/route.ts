@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
+interface CookieOptions {
+  maxAge?: number;
+  httpOnly?: boolean;
+  secure?: boolean;
+  sameSite?: 'strict' | 'lax' | 'none';
+  path?: string;
+  domain?: string;
+}
+
 function createSupabaseServerClient(req: NextRequest, res: NextResponse) {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,10 +18,10 @@ function createSupabaseServerClient(req: NextRequest, res: NextResponse) {
       cookies: {
         get: (name: string) => req.cookies.get(name)?.value,
         getAll: () => req.cookies.getAll(),
-        set: (name: string, value: string, options: any) => {
+        set: (name: string, value: string, options: CookieOptions) => {
           res.cookies.set(name, value, options);
         },
-        remove: (name: string, options: any) => {
+        remove: (name: string, options: CookieOptions) => {
           res.cookies.set(name, '', { ...options, maxAge: 0 });
         },
       },
@@ -64,8 +73,9 @@ export async function POST(req: NextRequest) {
       },
       { status: 200, headers: res.headers }
     );
-  } catch (e: any) {
-    return NextResponse.json({ success: false, error: e?.message || 'Erro interno' }, { status: 500 });
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : 'Erro interno';
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
 
@@ -92,7 +102,8 @@ export async function GET(req: NextRequest) {
       },
       { status: 200, headers: res.headers }
     );
-  } catch (e: any) {
-    return NextResponse.json({ success: false, error: e?.message || 'Erro interno' }, { status: 500 });
+  } catch (e: unknown) {
+    const errorMessage = e instanceof Error ? e.message : 'Erro interno';
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getSupabaseClient } from '@/lib/supabase-client';
 import { Settings, Save, RefreshCw, Database, Shield, MessageSquare } from 'lucide-react';
 
@@ -39,11 +39,7 @@ export default function SystemSettings() {
   });
   const supabase = getSupabaseClient();
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('system_settings')
@@ -66,9 +62,10 @@ export default function SystemSettings() {
         maintenance_mode: ''
       };
       
-      settingsData.forEach(setting => {
+      settingsData.forEach((setting) => {
         if (setting.key in formValues) {
-          (formValues as any)[setting.key] = setting.value;
+          const key = setting.key as keyof SettingForm;
+          formValues[key] = setting.value;
         }
       });
       
@@ -78,7 +75,11 @@ export default function SystemSettings() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   const initializeDefaultSettings = async () => {
     const defaultSettings = [
@@ -250,69 +251,87 @@ export default function SystemSettings() {
           </button>
         </div>
       ) : (
-        <form onSubmit={saveSettings} className="space-y-6">
-          {/* Configurações Gerais */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center mb-4">
-              <Settings className="h-5 w-5 text-gray-500 mr-2" />
-              <h2 className="text-lg font-medium text-gray-900">Configurações Gerais</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={saveSettings} className="bg-white rounded-lg shadow p-6 space-y-6">
+          {/* General Settings */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <Settings className="h-5 w-5 mr-2" />
+              Configurações Gerais
+            </h3>
+            <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nome do Site
-                </label>
+                <label className="block text-sm font-medium text-gray-700">Nome do Site</label>
                 <input
                   type="text"
                   value={formData.site_name}
                   onChange={(e) => handleInputChange('site_name', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Nome da aplicação"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Descrição do Site
-                </label>
-                <input
-                  type="text"
+                <label className="block text-sm font-medium text-gray-700">Descrição do Site</label>
+                <textarea
                   value={formData.site_description}
                   onChange={(e) => handleInputChange('site_description', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Descrição da aplicação"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  rows={3}
                 />
               </div>
             </div>
           </div>
 
-          {/* Configurações de Autenticação */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center mb-4">
-              <Shield className="h-5 w-5 text-gray-500 mr-2" />
-              <h2 className="text-lg font-medium text-gray-900">Autenticação</h2>
-            </div>
+          {/* Chat Settings */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <MessageSquare className="h-5 w-5 mr-2" />
+              Configurações de Chat
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Permitir Registro
-                </label>
+                <label className="block text-sm font-medium text-gray-700">Máximo de Mensagens por Conversa</label>
+                <input
+                  type="number"
+                  value={formData.max_messages_per_conversation}
+                  onChange={(e) => handleInputChange('max_messages_per_conversation', e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Limite de Mensagens por Minuto</label>
+                <input
+                  type="number"
+                  value={formData.chat_rate_limit}
+                  onChange={(e) => handleInputChange('chat_rate_limit', e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Auth Settings */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <Shield className="h-5 w-5 mr-2" />
+              Configurações de Autenticação
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Permitir Registro de Usuários</label>
                 <select
                   value={formData.enable_user_registration}
                   onChange={(e) => handleInputChange('enable_user_registration', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="true">Sim</option>
                   <option value="false">Não</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Role Padrão
-                </label>
+                <label className="block text-sm font-medium text-gray-700">Role Padrão para Novos Usuários</label>
                 <select
                   value={formData.default_user_role}
                   onChange={(e) => handleInputChange('default_user_role', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="user">Usuário</option>
                   <option value="admin">Administrador</option>
@@ -321,57 +340,19 @@ export default function SystemSettings() {
             </div>
           </div>
 
-          {/* Configurações de Chat */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center mb-4">
-              <MessageSquare className="h-5 w-5 text-gray-500 mr-2" />
-              <h2 className="text-lg font-medium text-gray-900">Chat</h2>
-            </div>
+          {/* System Settings */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+              <RefreshCw className="h-5 w-5 mr-2" />
+              Configurações do Sistema
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Máximo de Mensagens por Conversa
-                </label>
-                <input
-                  type="number"
-                  value={formData.max_messages_per_conversation}
-                  onChange={(e) => handleInputChange('max_messages_per_conversation', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="100"
-                  min="1"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Limite de Mensagens por Minuto
-                </label>
-                <input
-                  type="number"
-                  value={formData.chat_rate_limit}
-                  onChange={(e) => handleInputChange('chat_rate_limit', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="10"
-                  min="1"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Configurações do Sistema */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center mb-4">
-              <Database className="h-5 w-5 text-gray-500 mr-2" />
-              <h2 className="text-lg font-medium text-gray-900">Sistema</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Modo de Manutenção
-                </label>
+                <label className="block text-sm font-medium text-gray-700">Modo de Manutenção</label>
                 <select
                   value={formData.maintenance_mode}
                   onChange={(e) => handleInputChange('maintenance_mode', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 >
                   <option value="false">Desativado</option>
                   <option value="true">Ativado</option>
@@ -380,13 +361,12 @@ export default function SystemSettings() {
             </div>
           </div>
 
-          {/* Botões de Ação */}
-          <div className="flex justify-end space-x-4">
+          <div className="flex justify-end space-x-3">
             <button
               type="button"
               onClick={fetchSettings}
               disabled={saving}
-              className="flex items-center px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Recarregar
@@ -394,7 +374,7 @@ export default function SystemSettings() {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
             >
               <Save className="h-4 w-4 mr-2" />
               {saving ? 'Salvando...' : 'Salvar Configurações'}

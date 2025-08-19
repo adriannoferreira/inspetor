@@ -28,7 +28,7 @@ export default function ClearCorruptedCookies() {
                 }
                 // Se chegou até aqui, o cookie é válido
               }
-            } catch (error) {
+            } catch {
               console.warn(`Removendo localStorage corrompido: ${key}`);
               localStorage.removeItem(key);
             }
@@ -50,7 +50,7 @@ export default function ClearCorruptedCookies() {
                 }
                 // Se chegou até aqui, o sessionStorage é válido
               }
-            } catch (error) {
+            } catch {
               console.warn(`Removendo sessionStorage corrompido: ${key}`);
               sessionStorage.removeItem(key);
             }
@@ -60,8 +60,8 @@ export default function ClearCorruptedCookies() {
         // IMPORTANTE: NÃO limpar cookies do document, pois eles são gerenciados pelo Supabase SSR
         // Os cookies HTTP-only devem ser mantidos para funcionar com middleware
         
-      } catch (error) {
-        console.error('Erro ao verificar cookies corrompidos:', error);
+      } catch {
+        console.error('Erro ao verificar cookies corrompidos');
       }
     };
 

@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { getSupabaseClient } from '@/lib/supabase-client';
-import { Users, Search, Edit, Trash2, UserCheck, UserX, Plus } from 'lucide-react';
+import { Users, Search, Edit, UserCheck, UserX, Plus } from 'lucide-react';
 
 interface User {
   id: string;
@@ -20,14 +20,10 @@ export default function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState<'all' | 'admin' | 'user'>('all');
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [, setShowCreateModal] = useState(false);
   const supabase = getSupabaseClient();
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -41,7 +37,11 @@ export default function UsersManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const updateUser = async (userId: string, updates: Partial<User>) => {
     try {

@@ -2,7 +2,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useChatStore } from '@/stores/chatStore';
-import { Check, CheckCheck, Download, FileText, Music, Video, Image } from 'lucide-react';
+import { CheckCheck, Download, FileText, Music, Video, Image } from 'lucide-react';
 import { Attachment } from '@/lib/types';
 
 export default function ChatMessage({ 

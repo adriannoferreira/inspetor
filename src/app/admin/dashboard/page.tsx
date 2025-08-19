@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getSupabaseClient, withAuth } from '@/lib/supabase-client';
+import { withAuth } from '@/lib/supabase-client';
 import { Users, MessageSquare, Settings, TrendingUp, Activity } from 'lucide-react';
 
 interface Stats {
@@ -19,6 +19,14 @@ interface RecentActivity {
   details?: string;
 }
 
+// Tipo para a linha retornada da consulta de conversas recentes
+interface ConversationRow {
+  id: string;
+  created_at: string;
+  agent_type: string;
+  profiles?: { email: string | null } | null;
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats>({
     totalUsers: 0,
@@ -33,7 +41,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const result = await withAuth(async (supabase, session) => {
+        const result = await withAuth(async (supabase) => {
           const [usersResult, conversationsResult, messagesResult, activeUsersResult] = await Promise.all([
             supabase.from('profiles').select('id', { count: 'exact', head: true }),
             supabase.from('conversations').select('id', { count: 'exact', head: true }),
@@ -53,7 +61,7 @@ export default function AdminDashboard() {
           setStats(result);
         }
 
-        const activityResult = await withAuth(async (supabase, session) => {
+        const activityResult = await withAuth(async (supabase) => {
           const { data: recentConversations } = await supabase
             .from('conversations')
             .select(`
@@ -73,7 +81,7 @@ export default function AdminDashboard() {
         const activity: RecentActivity[] = [];
         
         if (recentConversations) {
-          recentConversations.forEach((conv: any) => {
+          recentConversations.forEach((conv: ConversationRow) => {
             activity.push({
               id: conv.id,
               type: 'conversation_created',
@@ -250,13 +258,13 @@ export default function AdminDashboard() {
             </a>
 
             <a
-              href="/chat"
+              href="/dashboard/analytics"
               className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <MessageSquare className="h-8 w-8 text-purple-600 mr-3" />
+              <TrendingUp className="h-8 w-8 text-purple-600 mr-3" />
               <div>
-                <h3 className="font-medium text-gray-900">Testar Chat</h3>
-                <p className="text-sm text-gray-600">Acessar como usuário normal</p>
+                <h3 className="font-medium text-gray-900">Analytics</h3>
+                <p className="text-sm text-gray-600">Ver métricas e relatórios</p>
               </div>
             </a>
           </div>

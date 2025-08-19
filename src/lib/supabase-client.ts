@@ -1,7 +1,8 @@
-import { createBrowserClient } from '@supabase/ssr';
+import { createBrowserClient, type SupabaseClient } from '@supabase/ssr';
+import type { Session } from '@supabase/supabase-js';
 
 // Cliente Supabase singleton para garantir consistência
-let supabaseClient: any = null;
+let supabaseClient: SupabaseClient | null = null;
 
 /**
  * Cria ou retorna o cliente Supabase com sessão ativa
@@ -37,7 +38,7 @@ export const getAuthenticatedSession = async () => {
  * Executa uma operação no Supabase garantindo que o usuário está autenticado
  * Retorna null se não houver sessão ativa
  */
-export const withAuth = async <T>(operation: (supabase: any, session: any) => Promise<T>): Promise<T | null> => {
+export const withAuth = async <T>(operation: (supabase: SupabaseClient, session: Session) => Promise<T>): Promise<T | null> => {
   console.log('🔐 withAuth: Verificando autenticação...');
   const session = await getAuthenticatedSession();
   

@@ -6,7 +6,7 @@ export interface Agent {
   description: string;
   avatar_url: string;
   system_prompt: string;
-  payload: any;
+  payload: Record<string, unknown>;
   is_active: boolean;
   agent_type: 'advogado' | 'contador' | 'consultor' | 'geral';
   created_at: string;

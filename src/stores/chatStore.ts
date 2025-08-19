@@ -71,7 +71,7 @@ interface ChatStoreState extends ChatState {
 
 export const useChatStore = create<ChatStoreState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       messages: [],
       currentConversation: null,
       isTyping: false,
@@ -121,19 +121,25 @@ export const useChatStore = create<ChatStoreState>()(
         currentConversation: state.currentConversation
       }),
       // Remove currentAgent persistido de versões antigas e corrige objetos inválidos
-      migrate: (persistedState: any, currentVersion: number) => {
+      migrate: (persistedState: Partial<ChatStoreState> | undefined) => {
         try {
-          const { currentAgent: _drop, ...rest } = persistedState || {};
-          return rest;
+          const state = (persistedState || {}) as Partial<ChatStoreState>;
+          // Remove currentAgent persistido de versões antigas
+          if ('currentAgent' in state) {
+            delete state.currentAgent;
+          }
+          return state as Partial<ChatStoreState>;
         } catch {
-          return persistedState;
+          return persistedState as Partial<ChatStoreState> | undefined;
         }
       },
       // Sanitiza estados antigos que persistiram currentAgent com icon inválido
-      merge: (persistedState: any, currentState: any) => {
-        const state: ChatStoreState = { ...currentState, ...persistedState };
-        if (!state.currentAgent || typeof (state.currentAgent as any).icon !== 'function') {
-          state.currentAgent = AGENTS[0];
+      merge: (persistedState: Partial<ChatStoreState> | undefined, currentState: ChatStoreState) => {
+        const state: ChatStoreState = { ...currentState, ...(persistedState || {}) } as ChatStoreState;
+        const hasValidIcon = typeof state.currentAgent?.icon === 'function';
+        if (!state.currentAgent || !hasValidIcon) {
+          // fallback simples: manter o DEFAULT_AGENT
+          state.currentAgent = DEFAULT_AGENT;
         }
         return state;
       },

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { getSupabaseClient, withAuth } from '@/lib/supabase-client';
+import { getSupabaseClient } from '@/lib/supabase-client';
 
 export interface Agent {
   id: string;
   name: string;
   description: string;
   avatar_url: string;
-  payload: any;
+  payload: Record<string, unknown>;
   is_active: boolean;
   agent_type: 'advogado' | 'contador' | 'consultor' | 'geral';
   created_at: string;

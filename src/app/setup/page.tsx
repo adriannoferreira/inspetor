@@ -44,21 +44,7 @@ export default function SetupPage() {
     forceRedirectIfAdminExists();
   }, []);
 
-  const checkIfSetupNeeded = async () => {
-    try {
-      const needsSetup = await needsInitialSetup();
-      
-      if (!needsSetup) {
-        // Se já existe admin, redirecionar para login
-        window.location.href = '/login';
-        return;
-      }
-    } catch (error) {
-      console.error('Erro ao verificar necessidade de setup:', error);
-    } finally {
-      setCheckingSetup(false);
-    }
-  };
+
 
   const validateForm = () => {
     const errors: {[key: string]: string} = {};

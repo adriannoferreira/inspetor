@@ -20,7 +20,7 @@ export async function checkAdminExists(): Promise<boolean> {
     }
 
     return !!data;
-  } catch (error) {
+  } catch {
     console.error('Erro ao verificar admin existente:', error);
     return false;
   }
@@ -102,8 +102,8 @@ export async function createDefaultAdmin(
       message: 'Administrador criado com sucesso! Verifique seu email para confirmar a conta.'
     };
     
-  } catch (error) {
-    console.error('Erro ao criar admin padrão:', error);
+  } catch {
+    console.error('Erro ao criar admin padrão');
     return {
       success: false,
       message: 'Erro interno ao criar administrador.'
@@ -194,7 +194,7 @@ export async function forceSetupDefaultSettings(): Promise<AdminSetupResult> {
       success: true,
       message: 'Configurações padrão criadas com sucesso.'
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       message: 'Erro ao criar configurações padrão.'

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getSupabaseClient, withAuth } from '@/lib/supabase-client';
 import { useChatStore } from '@/stores/chatStore';
+import { Attachment } from '@/lib/types';
 
 export interface Message {
   id: string;
@@ -8,7 +9,7 @@ export interface Message {
   content: string;
   role: 'user' | 'assistant';
   agent_id?: string;
-  attachments?: any[];
+  attachments?: Attachment[];
   created_at: string;
 }
 
@@ -20,14 +21,14 @@ export function useMessages(conversationId: string | null, userId: string | null
   const messages = useChatStore(s => s.messages);
 
   // Carregar mensagens do banco de dados
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     if (!conversationId || !userId) return;
 
     try {
       setLoading(true);
       setError(null);
 
-      const result = await withAuth(async (supabase, session) => {
+      const result = await withAuth(async (supabase) => {
         const { data: messages, error: messagesError } = await supabase
           .from('messages')
           .select(`
@@ -73,7 +74,7 @@ export function useMessages(conversationId: string | null, userId: string | null
     } finally {
       setLoading(false);
     }
-  };
+  }, [conversationId, userId, addMessage]);
 
   // Configurar subscription para notificações em tempo real
   useEffect(() => {
@@ -91,7 +92,7 @@ export function useMessages(conversationId: string | null, userId: string | null
         'broadcast',
         { event: 'new_message' },
         (payload) => {
-          const { conversationId: msgConvId, message, agentId, userId: msgUserId } = payload.payload;
+          const { conversationId: msgConvId, message, userId: msgUserId } = payload.payload;
           
           // Verificar se a mensagem é para esta conversa e usuário
           if (msgConvId === conversationId && msgUserId === userId) {
@@ -117,7 +118,7 @@ export function useMessages(conversationId: string | null, userId: string | null
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, userId, addMessage, setTyping]);
+  }, [conversationId, userId, addMessage, setTyping, loadMessages]);
 
   return {
     messages,

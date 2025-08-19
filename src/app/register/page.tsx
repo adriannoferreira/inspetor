@@ -99,7 +99,7 @@ export default function RegisterPage() {
           router.push('/login?message=account_created');
         }, 3000);
       }
-    } catch (err) {
+    } catch {
       setError('Erro inesperado. Tente novamente.');
     } finally {
       setLoading(false);

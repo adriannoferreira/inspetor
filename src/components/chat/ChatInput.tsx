@@ -4,12 +4,13 @@ import { Send, Paperclip, Mic, Smile, X } from 'lucide-react';
 import { useChatStore } from '@/stores/chatStore';
 import axios from 'axios';
 import { isoNow } from '@/lib/utils';
-import { getSupabaseClient, withAuth } from '@/lib/supabase-client';
+import { getSupabaseClient } from '@/lib/supabase-client';
 import { Attachment } from '@/lib/types';
+import type { Message, Conversation } from '@/lib/types';
 import { toast } from 'sonner';
 
 interface ChatInputProps {
-  onSend?: (content: string, attachments: any[]) => void;
+  onSend?: (content: string, attachments: Attachment[]) => void;
   disabled?: boolean;
   agentId?: string;
 }
@@ -43,7 +44,7 @@ export default function ChatInput({ onSend, disabled = false, agentId }: ChatInp
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${userId}/${fileName}`;
       
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('attachments')
         .upload(filePath, file);
       
@@ -119,18 +120,18 @@ export default function ChatInput({ onSend, disabled = false, agentId }: ChatInp
     // Se há uma função onSend personalizada, usar ela
     if (onSend) {
       // Adiciona mensagem do usuário localmente para feedback imediato
-      const userMsg = {
+      const userMsg: Omit<Message, 'id' | 'created_at'> = {
         conversation_id: conv?.id || 'temp',
         content: content || '[Anexo]',
         is_user: true,
         agent_id: agentId || agent.id,
         attachments: currentAttachments,
-      } as any;
+      };
       addMessage(userMsg);
       
       try {
         await onSend(content || '[Anexo]', currentAttachments);
-      } catch (e) {
+      } catch {
         toast.error('Não foi possível enviar sua mensagem');
       }
       return;
@@ -140,12 +141,12 @@ export default function ChatInput({ onSend, disabled = false, agentId }: ChatInp
     if (!agent) return;
     
     // Adiciona mensagem do usuário localmente para feedback imediato
-    const userMsg = {
+    const userMsg: Omit<Message, 'id' | 'created_at'> = {
       conversation_id: conv?.id || 'temp',
       content: content || '[Anexo]',
       is_user: true,
       attachments: currentAttachments,
-    } as any;
+    };
     addMessage(userMsg);
 
     try {
@@ -158,18 +159,19 @@ export default function ChatInput({ onSend, disabled = false, agentId }: ChatInp
         attachments: currentAttachments,
       });
 
-      const data = res.data as { conversationId?: string };
+      const responseData = res.data as { conversationId?: string };
 
       // Se não havia conversa, define a atual com a retornada pela API
-      if (!conv?.id && data?.conversationId && userId) {
-        setCurrentConversation({
-          id: data.conversationId,
+      if (!conv?.id && responseData?.conversationId && userId) {
+        const newConv: Conversation = {
+          id: responseData.conversationId,
           user_id: userId,
           agent_id: agent.id,
           title: content.substring(0, 50) + (content.length > 50 ? '...' : ''),
           created_at: isoNow(),
           updated_at: isoNow(),
-        } as any);
+        };
+        setCurrentConversation(newConv);
       }
 
     } catch (e) {

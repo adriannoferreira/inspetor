@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Users, Edit, Trash2, UserCheck, UserX, Search, Filter } from 'lucide-react';
+import { Users, Edit, UserCheck, UserX, Search } from 'lucide-react';
 import { getSupabaseClient } from '@/lib/supabase-client';
 
 interface User {
@@ -25,7 +25,7 @@ export default function UsersManagement() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [fetchUsers]);
 
   const fetchUsers = async () => {
     try {

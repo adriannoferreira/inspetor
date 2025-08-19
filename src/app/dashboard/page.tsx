@@ -73,7 +73,7 @@ export default function AdminDashboard() {
         const activity: RecentActivity[] = [];
         
         if (recentConversations) {
-          recentConversations.forEach((conv: any) => {
+          recentConversations.forEach((conv: { id: string; user_id: string; title?: string | null; created_at: string; }) => {
             activity.push({
               id: conv.id,
               type: 'conversation_created',

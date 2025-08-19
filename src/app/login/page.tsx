@@ -130,7 +130,7 @@ export default function LoginPage() {
         }, 100);
         return;
       }
-    } catch (err) {
+    } catch {
       setError('Erro inesperado. Tente novamente.');
     } finally {
       setLoading(false);
