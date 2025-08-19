@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     // Buscar informações do agente
     const { data: agent, error: agentError } = await supabase
       .from('agents')
-      .select('agent_type, name')
+      .select('agent_type, name, payload')
       .eq('id', agentId)
       .single();
 

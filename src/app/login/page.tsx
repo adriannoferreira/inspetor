@@ -122,6 +122,16 @@ export default function LoginPage() {
           return;
         }
         
+        // Atualizar último acesso
+        try {
+          await supabase
+            .from('profiles')
+            .update({ last_sign_in_at: new Date().toISOString() })
+            .eq('id', data.user.id);
+        } catch (updateError) {
+          console.warn('Erro ao atualizar último acesso:', updateError);
+        }
+        
         // Redirecionar baseado no perfil
         // Redirecionar sempre para redirectTo (padrão /chat)
         // Aguardar um pouco para garantir que a sessão seja estabelecida

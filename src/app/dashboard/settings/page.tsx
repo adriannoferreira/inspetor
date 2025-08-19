@@ -58,7 +58,6 @@ export default function SystemSettings() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [showAgentModal, setShowAgentModal] = useState(false);
-  const [showPayloadModal, setShowPayloadModal] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Partial<Agent> | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   
@@ -67,11 +66,6 @@ export default function SystemSettings() {
   const [testingWebhook, setTestingWebhook] = useState(false);
   
   const supabase = getSupabaseClient();
-
-  useEffect(() => {
-    fetchSettings();
-    fetchAgents();
-  }, [fetchSettings, fetchAgents]);
 
   const fetchSettings = useCallback(async () => {
     try {
@@ -103,7 +97,7 @@ export default function SystemSettings() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, settings]);
+  }, [supabase]);
 
   const fetchAgents = useCallback(async () => {
     try {
@@ -122,6 +116,11 @@ export default function SystemSettings() {
       console.error('Erro ao buscar agentes:');
     }
   }, [supabase]);
+
+  useEffect(() => {
+    fetchSettings();
+    fetchAgents();
+  }, [fetchSettings, fetchAgents]);
 
   const saveSettings = async () => {
     try {
@@ -250,33 +249,7 @@ export default function SystemSettings() {
     }
   };
 
-  const updateAgentPayload = async () => {
-    if (!selectedAgent) return;
 
-    try {
-      setSaving(true);
-      
-      const { error } = await supabase
-        .from('agents')
-        .update({ payload: selectedAgent.payload })
-        .eq('id', selectedAgent.id);
-
-      if (error) {
-        console.error('Erro ao atualizar payload:', error);
-        alert('Erro ao salvar payload');
-        return;
-      }
-
-      alert('Payload atualizado com sucesso!');
-      setShowPayloadModal(false);
-      fetchAgents();
-    } catch (error) {
-      console.error('Erro ao atualizar payload:', error);
-      alert('Erro ao salvar payload');
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const testWebhook = async () => {
     if (!settings.n8n_webhook_url) {
@@ -385,10 +358,7 @@ export default function SystemSettings() {
     setShowAgentModal(true);
   };
 
-  const openPayloadModal = (agent: Agent) => {
-    setSelectedAgent(agent);
-    setShowPayloadModal(true);
-  };
+
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -822,47 +792,111 @@ export default function SystemSettings() {
       {/* Payloads Tab */}
       {activeTab === 'payloads' && (
         <div className="space-y-6">
-          <h2 className="text-lg font-semibold text-gray-900">Payloads dos Agentes</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {agents.map((agent) => (
-              <div key={agent.id} className="bg-white rounded-lg shadow p-6">
-                <div className="flex items-center mb-4">
-                  {agent.avatar_url ? (
-                    <Image className="h-8 w-8 rounded-full mr-3" src={agent.avatar_url} alt={agent.name} width={32} height={32} />
-                  ) : (
-                    <div className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center mr-3">
-                      <Users className="h-4 w-4 text-gray-600" />
-                    </div>
-                  )}
-                  <h3 className="text-lg font-medium text-gray-900">{agent.name}</h3>
-                </div>
-                
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600 mb-2">Payload atual:</p>
-                  <pre className="bg-gray-100 p-3 rounded text-xs overflow-x-auto max-h-32">
-                    {JSON.stringify(agent.payload, null, 2)}
-                  </pre>
-                </div>
-                
-                <button
-                  onClick={() => openPayloadModal(agent)}
-                  className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-                >
-                  <Code className="-ml-1 mr-2 h-4 w-4" />
-                  Editar Payload
-                </button>
-              </div>
-            ))}
-          </div>
-          
-          {agents.length === 0 && (
-            <div className="text-center py-12">
-              <Code className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum agente encontrado</h3>
-              <p className="mt-1 text-sm text-gray-500">Crie agentes na aba &quot;Agentes&quot; para gerenciar seus payloads.</p>
+          <div className="bg-white shadow rounded-lg">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Configuração do Payload Global</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Configure o payload que será enviado para o N8N em todas as conversas. Este é o formato atual sendo usado.
+              </p>
             </div>
-          )}
+            
+            <div className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Payload Atual (Somente Leitura)
+                  </label>
+                  <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                    <pre className="text-xs text-gray-800 overflow-x-auto">
+{`{
+  "user_name": "Nome do Usuário",
+  "sender_type": "User",
+  "message": "Mensagem do usuário",
+  "agent_name": "Nome do Agente",
+  "conversation_id": "ID da conversa",
+  "attachments": [],
+  "attachments_type": "Tipos de anexos",
+  "timestamp": "Data/hora ISO"
+}`}
+                    </pre>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500">
+                    Este é o formato atual do payload enviado para o N8N. Os valores são preenchidos dinamicamente durante as conversas.
+                  </p>
+                </div>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                   <div className="flex">
+                     <div className="flex-shrink-0">
+                       <Code className="h-5 w-5 text-blue-400" />
+                     </div>
+                     <div className="ml-3">
+                       <h3 className="text-sm font-medium text-blue-800">
+                         Informações do Payload
+                       </h3>
+                       <div className="mt-2 text-sm text-blue-700">
+                         <ul className="list-disc list-inside space-y-1">
+                           <li><strong>user_name:</strong> Nome completo do usuário ou email</li>
+                           <li><strong>sender_type:</strong> Sempre &quot;User&quot; para mensagens do usuário</li>
+                           <li><strong>message:</strong> Conteúdo da mensagem enviada</li>
+                           <li><strong>agent_name:</strong> Nome do agente selecionado</li>
+                           <li><strong>conversation_id:</strong> ID único da conversa</li>
+                           <li><strong>attachments:</strong> Array com anexos (se houver)</li>
+                           <li><strong>attachments_type:</strong> Tipos de anexos separados por vírgula</li>
+                           <li><strong>timestamp:</strong> Data/hora no formato ISO</li>
+                         </ul>
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+                 
+                 <div className="bg-white border border-gray-200 rounded-md p-4">
+                   <div className="flex items-center justify-between mb-4">
+                     <div>
+                       <h3 className="text-sm font-medium text-gray-900">
+                         Testar Webhook
+                       </h3>
+                       <p className="text-xs text-gray-500 mt-1">
+                         Envie um payload de teste para verificar a integração com o N8N
+                       </p>
+                     </div>
+                     <button
+                       onClick={testWebhook}
+                       disabled={testingWebhook || !settings.n8n_webhook_url}
+                       className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                     >
+                       {testingWebhook ? (
+                         <>
+                           <RefreshCw className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                           Testando...
+                         </>
+                       ) : (
+                         <>
+                           <Webhook className="-ml-1 mr-2 h-4 w-4" />
+                           Testar Webhook
+                         </>
+                       )}
+                     </button>
+                   </div>
+                   
+                   {!settings.n8n_webhook_url && (
+                     <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                       <div className="flex">
+                         <div className="flex-shrink-0">
+                           <ExternalLink className="h-4 w-4 text-yellow-400" />
+                         </div>
+                         <div className="ml-3">
+                           <p className="text-sm text-yellow-700">
+                             Configure a URL do webhook N8N na aba &quot;Sistema&quot; para habilitar o teste.
+                           </p>
+                         </div>
+                       </div>
+                     </div>
+                   )}
+                 </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -985,60 +1019,7 @@ export default function SystemSettings() {
         </div>
       )}
 
-      {/* Payload Modal */}
-      {showPayloadModal && selectedAgent && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-10 mx-auto p-5 border w-3/4 max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Editar Payload - {selectedAgent.name}
-              </h3>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Payload JSON
-                </label>
-                <textarea
-                  value={JSON.stringify(selectedAgent.payload, null, 2)}
-                  onChange={(e) => {
-                    try {
-                      const parsed = JSON.parse(e.target.value);
-                      setSelectedAgent(prev => ({ ...prev!, payload: parsed }));
-                    } catch {
-                      // Ignore invalid JSON while typing
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                  rows={20}
-                  placeholder='{ "key": "value" }'
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Formato JSON válido. Este payload será enviado durante as conversas com este agente.
-                </p>
-              </div>
-              
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    setShowPayloadModal(false);
-                    setSelectedAgent(null);
-                  }}
-                  className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={updateAgentPayload}
-                  disabled={saving}
-                  className="px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
-                >
-                  {saving ? 'Salvando...' : 'Salvar Payload'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* API Tab */}
       {activeTab === 'api' && (

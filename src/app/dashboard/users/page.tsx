@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Users, Edit, UserCheck, UserX, Search } from 'lucide-react';
+import { Users, Edit, UserCheck, UserX, Search, Trash2, X, Save } from 'lucide-react';
 import { getSupabaseClient } from '@/lib/supabase-client';
 
 interface User {
@@ -20,19 +20,20 @@ export default function UsersManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'user'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [saving, setSaving] = useState(false);
   
   const supabase = getSupabaseClient();
-
-  useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
 
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, email, full_name, role, is_active, created_at, last_sign_in_at')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -47,6 +48,10 @@ export default function UsersManagement() {
       setLoading(false);
     }
   }, [supabase]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const toggleUserStatus = async (userId: string, currentStatus: boolean) => {
     try {
@@ -101,6 +106,91 @@ export default function UsersManagement() {
     } catch (error) {
       console.error('Erro ao atualizar role:', error);
       alert('Erro ao atualizar permissões do usuário');
+    }
+  };
+
+  const openEditModal = (user: User) => {
+    setEditingUser({ ...user });
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingUser(null);
+  };
+
+  const saveUser = async () => {
+    if (!editingUser) return;
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: editingUser.full_name,
+          email: editingUser.email,
+          role: editingUser.role,
+          is_active: editingUser.is_active
+        })
+        .eq('id', editingUser.id);
+
+      if (error) {
+        console.error('Erro ao atualizar usuário:', error);
+        alert('Erro ao atualizar usuário');
+        return;
+      }
+
+      // Atualizar a lista local
+      setUsers(users.map(user => 
+        user.id === editingUser.id ? editingUser : user
+      ));
+
+      alert('Usuário atualizado com sucesso!');
+      closeEditModal();
+    } catch (error) {
+      console.error('Erro ao salvar usuário:', error);
+      alert('Erro ao salvar usuário');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openDeleteModal = (user: User) => {
+    setDeletingUser(user);
+    setShowDeleteModal(true);
+  };
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeletingUser(null);
+  };
+
+  const deleteUser = async () => {
+    if (!deletingUser) return;
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', deletingUser.id);
+
+      if (error) {
+        console.error('Erro ao excluir usuário:', error);
+        alert('Erro ao excluir usuário');
+        return;
+      }
+
+      // Remover da lista local
+      setUsers(users.filter(user => user.id !== deletingUser.id));
+
+      alert('Usuário excluído com sucesso!');
+      closeDeleteModal();
+    } catch (error) {
+      console.error('Erro ao excluir usuário:', error);
+      alert('Erro ao excluir usuário');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -256,11 +346,19 @@ export default function UsersManagement() {
                       </button>
                       
                       <button
-                        onClick={() => toggleUserRole(user.id, user.role)}
+                        onClick={() => openEditModal(user)}
                         className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
-                        title={user.role === 'admin' ? 'Remover admin' : 'Tornar admin'}
+                        title="Editar usuário"
                       >
                         <Edit className="h-3 w-3" />
+                      </button>
+                      
+                      <button
+                        onClick={() => openDeleteModal(user)}
+                        className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200"
+                        title="Excluir usuário"
+                      >
+                        <Trash2 className="h-3 w-3" />
                       </button>
                     </div>
                   </td>
@@ -280,6 +378,149 @@ export default function UsersManagement() {
           </div>
         )}
       </div>
+
+      {/* Modal de Edição */}
+      {showEditModal && editingUser && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Editar Usuário</h3>
+                <button
+                  onClick={closeEditModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nome Completo
+                  </label>
+                  <input
+                    type="text"
+                    value={editingUser.full_name || ''}
+                    onChange={(e) => setEditingUser({ ...editingUser, full_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={editingUser.email}
+                    onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Função
+                  </label>
+                  <select
+                    value={editingUser.role}
+                    onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value as 'admin' | 'user' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="user">Usuário</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={editingUser.is_active}
+                      onChange={(e) => setEditingUser({ ...editingUser, is_active: e.target.checked })}
+                      className="mr-2"
+                    />
+                    <span className="text-sm font-medium text-gray-700">Usuário ativo</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={closeEditModal}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                  disabled={saving}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={saveUser}
+                  disabled={saving}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 flex items-center"
+                >
+                  {saving ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  {saving ? 'Salvando...' : 'Salvar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Exclusão */}
+      {showDeleteModal && deletingUser && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Confirmar Exclusão</h3>
+                <button
+                  onClick={closeDeleteModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-sm text-gray-600">
+                  Tem certeza que deseja excluir o usuário <strong>{deletingUser.full_name || deletingUser.email}</strong>?
+                </p>
+                <p className="text-sm text-red-600 mt-2">
+                  Esta ação não pode ser desfeita.
+                </p>
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={closeDeleteModal}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                  disabled={saving}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={deleteUser}
+                  disabled={saving}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-50 flex items-center"
+                >
+                  {saving ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-2" />
+                  )}
+                  {saving ? 'Excluindo...' : 'Excluir'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
