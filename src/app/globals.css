@@ -24,3 +24,49 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Mobile-first styles */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+}
+
+/* Prevent horizontal scroll on mobile */
+body {
+  overflow-x: hidden;
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
+}
+
+/* Touch-friendly interactive elements */
+button, 
+input, 
+textarea, 
+select {
+  touch-action: manipulation;
+}
+
+/* Improve tap targets on mobile */
+button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Hide scrollbars but keep functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

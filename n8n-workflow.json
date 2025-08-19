@@ -1,0 +1,376 @@
+{
+  "name": "O Inspetor - Roteador de Agentes IA",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "o-inspetor-chat"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.agentId }}",
+              "operation": "equal",
+              "value2": "advogado"
+            }
+          ]
+        }
+      },
+      "id": "if-advogado",
+      "name": "É Advogado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.agentId }}",
+              "operation": "equal",
+              "value2": "contador"
+            }
+          ]
+        }
+      },
+      "id": "if-contador",
+      "name": "É Contador?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.agentId }}",
+              "operation": "equal",
+              "value2": "consultor"
+            }
+          ]
+        }
+      },
+      "id": "if-consultor",
+      "name": "É Consultor?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 700]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "messages": {
+          "messageValues": [
+            {
+              "role": "system",
+              "content": "Você é um advogado especialista em direito empresarial e trabalhista. Responda de forma profissional, clara e baseada na legislação brasileira. Sempre cite as leis relevantes quando aplicável."
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 1000
+        }
+      },
+      "id": "openai-advogado",
+      "name": "OpenAI - Advogado",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [680, 200],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "messages": {
+          "messageValues": [
+            {
+              "role": "system",
+              "content": "Você é um contador especialista em contabilidade empresarial e fiscal. Responda de forma técnica, precisa e baseada nas normas contábeis brasileiras. Sempre mencione as regulamentações relevantes quando aplicável."
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 1000
+        }
+      },
+      "id": "openai-contador",
+      "name": "OpenAI - Contador",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [680, 400],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "messages": {
+          "messageValues": [
+            {
+              "role": "system",
+              "content": "Você é um consultor empresarial especialista em estratégia, gestão e desenvolvimento de negócios. Responda de forma estratégica, prática e focada em resultados. Sempre forneça insights acionáveis."
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 1000
+        }
+      },
+      "id": "openai-consultor",
+      "name": "OpenAI - Consultor",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [680, 600]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "messages": {
+          "messageValues": [
+            {
+              "role": "system",
+              "content": "Você é um assistente geral inteligente. Responda de forma útil, clara e educada. Se a pergunta for específica de uma área profissional, sugira que o usuário selecione o agente especializado apropriado."
+            },
+            {
+              "role": "user",
+              "content": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 1000
+        }
+      },
+      "id": "openai-geral",
+      "name": "OpenAI - Geral",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [680, 800]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.NEXT_APP_URL }}/api/webhook/n8n",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.N8N_WEBHOOK_SECRET }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "conversationId",
+              "value": "={{ $('webhook-trigger').first().json.conversationId }}"
+            },
+            {
+              "name": "response",
+              "value": "={{ $json.choices[0].message.content }}"
+            },
+            {
+              "name": "agentId",
+              "value": "={{ $('webhook-trigger').first().json.agentId }}"
+            },
+            {
+              "name": "userId",
+              "value": "={{ $('webhook-trigger').first().json.userId }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Enviar Resposta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": {
+          "success": true,
+          "message": "Mensagem processada com sucesso",
+          "response": "={{ $('webhook-response').first().json }}"
+        }
+      },
+      "id": "respond-to-webhook",
+      "name": "Responder Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 400]
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "if-advogado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if-advogado": {
+      "main": [
+        [
+          {
+            "node": "openai-advogado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "if-contador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if-contador": {
+      "main": [
+        [
+          {
+            "node": "openai-contador",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "if-consultor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if-consultor": {
+      "main": [
+        [
+          {
+            "node": "openai-consultor",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "openai-geral",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "openai-advogado": {
+      "main": [
+        [
+          {
+            "node": "webhook-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "openai-contador": {
+      "main": [
+        [
+          {
+            "node": "webhook-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "openai-consultor": {
+      "main": [
+        [
+          {
+            "node": "webhook-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "openai-geral": {
+      "main": [
+        [
+          {
+            "node": "webhook-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "webhook-response": {
+      "main": [
+        [
+          {
+            "node": "respond-to-webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "America/Sao_Paulo"
+  },
+  "versionId": "1"
+}

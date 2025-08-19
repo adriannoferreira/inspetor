@@ -1,36 +1,185 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# O Inspetor - Roteador Inteligente de Agentes IA
 
-## Getting Started
+Um sistema inteligente que roteia conversas para agentes especializados (Advogado, Contador, Consultor) usando Next.js 14, Supabase e N8N.
 
-First, run the development server:
+## 🚀 Funcionalidades
 
+- **Roteamento Inteligente**: Direciona mensagens para agentes especializados
+- **Autenticação Segura**: Sistema completo de login/registro com Supabase
+- **Chat em Tempo Real**: Interface moderna de chat com histórico
+- **Persistência de Dados**: Conversas e mensagens salvas no Supabase
+- **Integração N8N**: Processamento de mensagens via webhooks
+- **UI Responsiva**: Interface moderna com Tailwind CSS
+
+## 🛠️ Tecnologias
+
+- **Frontend**: Next.js 14 (App Router), React, TypeScript
+- **Styling**: Tailwind CSS
+- **Estado**: Zustand
+- **Banco de Dados**: Supabase (PostgreSQL)
+- **Autenticação**: Supabase Auth
+- **Automação**: N8N
+- **IA**: OpenAI GPT-4 (via N8N)
+
+## 📋 Pré-requisitos
+
+- Node.js 18+ 
+- Conta no Supabase
+- Instância do N8N
+- Chave da API OpenAI
+
+## 🔧 Instalação
+
+### 1. Clone o repositório
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <url-do-repositorio>
+cd inspetor
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Instale as dependências
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Configure as variáveis de ambiente
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Edite o arquivo `.env.local` com suas configurações:
 
-## Learn More
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=sua_url_do_supabase
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anonima_supabase
+SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role_supabase
 
-To learn more about Next.js, take a look at the following resources:
+# N8N Webhook Configuration
+N8N_WEBHOOK_URL=https://sua-instancia-n8n.com/webhook/chat
+N8N_WEBHOOK_SECRET=sua_chave_secreta_webhook
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Next.js Configuration
+NEXTAUTH_SECRET=sua_chave_secreta_nextauth
+NEXTAUTH_URL=http://localhost:3000
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4. Configure o banco de dados Supabase
 
-## Deploy on Vercel
+1. Acesse seu projeto no [Supabase Dashboard](https://supabase.com/dashboard)
+2. Vá para **SQL Editor**
+3. Execute o script `supabase-schema.sql` para criar as tabelas e políticas RLS
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 5. Configure o N8N
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Importe o workflow `n8n-workflow.json` na sua instância N8N
+2. Configure as credenciais da OpenAI
+3. Ajuste as variáveis de ambiente no N8N:
+   - `NEXT_APP_URL`: URL da sua aplicação Next.js
+   - `N8N_WEBHOOK_SECRET`: Mesma chave configurada no .env.local
+
+### 6. Execute o projeto
+```bash
+npm run dev
+```
+
+Acesse http://localhost:3000
+
+## 📁 Estrutura do Projeto
+
+```
+src/
+├── app/
+│   ├── (auth)/
+│   │   ├── login/          # Página de login
+│   │   └── register/       # Página de registro
+│   ├── api/
+│   │   ├── chat/send/      # API para enviar mensagens
+│   │   ├── conversations/  # API para listar conversas
+│   │   └── webhook/n8n/    # Webhook para receber respostas do N8N
+│   ├── dashboard/          # Página principal do chat
+│   └── layout.tsx          # Layout raiz
+├── components/
+│   ├── agents/             # Componentes dos agentes
+│   ├── chat/               # Componentes do chat
+│   └── ui/                 # Componentes UI reutilizáveis
+├── lib/
+│   ├── supabase.ts         # Configuração do Supabase
+│   ├── types.ts            # Tipos TypeScript
+│   └── utils.ts            # Funções utilitárias
+├── stores/
+│   └── chatStore.ts        # Store Zustand para estado do chat
+└── middleware.ts           # Middleware de autenticação
+```
+
+## 🎯 Agentes Disponíveis
+
+### 👨‍⚖️ Advogado
+- Especialista em direito empresarial e trabalhista
+- Respostas baseadas na legislação brasileira
+- Cita leis relevantes quando aplicável
+
+### 👨‍💼 Contador
+- Especialista em contabilidade empresarial e fiscal
+- Respostas técnicas baseadas nas normas contábeis brasileiras
+- Menciona regulamentações relevantes
+
+### 👨‍💻 Consultor
+- Especialista em estratégia e gestão empresarial
+- Foco em resultados e insights acionáveis
+- Orientações práticas para desenvolvimento de negócios
+
+### 🤖 Assistente Geral
+- Assistente para questões gerais
+- Sugere agentes especializados quando apropriado
+
+## 🔐 Segurança
+
+- **Row Level Security (RLS)**: Políticas de segurança no Supabase
+- **Autenticação JWT**: Tokens seguros via Supabase Auth
+- **Middleware de Proteção**: Rotas protegidas automaticamente
+- **Validação de Webhooks**: Chave secreta para validar requisições N8N
+
+## 🚀 Deploy
+
+### Vercel (Recomendado)
+
+1. Conecte seu repositório ao Vercel
+2. Configure as variáveis de ambiente
+3. Deploy automático
+
+### Outras Plataformas
+
+O projeto é compatível com qualquer plataforma que suporte Next.js:
+- Netlify
+- Railway
+- DigitalOcean App Platform
+
+## 🤝 Contribuição
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📝 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+
+## 🆘 Suporte
+
+Se você encontrar algum problema ou tiver dúvidas:
+
+1. Verifique se todas as variáveis de ambiente estão configuradas
+2. Confirme se o banco de dados Supabase foi configurado corretamente
+3. Teste se o webhook N8N está respondendo
+4. Abra uma issue no repositório
+
+## 🔄 Próximas Funcionalidades
+
+- [ ] Notificações em tempo real
+- [ ] Upload de arquivos
+- [ ] Histórico de conversas com busca
+- [ ] Temas personalizáveis
+- [ ] API para integração com outros sistemas
+- [ ] Dashboard de analytics
