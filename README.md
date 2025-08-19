@@ -32,7 +32,7 @@ Um sistema inteligente que roteia conversas para agentes especializados (Advogad
 
 ### 1. Clone o repositório
 ```bash
-git clone <url-do-repositorio>
+git clone https://github.com/adriannoferreira/inspetor.git
 cd inspetor
 ```
 
@@ -143,16 +143,36 @@ src/
 
 ### Vercel (Recomendado)
 
-1. Conecte seu repositório ao Vercel
+1. **Fork o repositório** no GitHub
+2. **Conecte ao Vercel**:
+   - Acesse [vercel.com](https://vercel.com)
+   - Conecte sua conta GitHub
+   - Importe o repositório `inspetor`
+3. **Configure as variáveis de ambiente**:
+   - Copie todas as variáveis do `.env.example`
+   - Configure com seus valores reais do Supabase
+   - Atualize `NEXTAUTH_URL` para sua URL de produção
+4. **Deploy automático** - Vercel fará o build e deploy
+
+### Railway
+
+1. Conecte seu repositório ao Railway
 2. Configure as variáveis de ambiente
-3. Deploy automático
+3. Railway detectará automaticamente o Next.js
 
-### Outras Plataformas
+### Netlify
 
-O projeto é compatível com qualquer plataforma que suporte Next.js:
-- Netlify
-- Railway
-- DigitalOcean App Platform
+1. Conecte seu repositório ao Netlify
+2. Configure build command: `npm run build`
+3. Configure publish directory: `.next`
+4. Configure as variáveis de ambiente
+
+### Configurações Importantes para Produção
+
+- **Supabase**: Adicione sua URL de produção nas "Site URL" permitidas
+- **N8N**: Atualize a URL do webhook para o domínio de produção
+- **CORS**: Verifique as configurações de CORS nas APIs
+- **Autenticação**: Configure os provedores de auth no Supabase para produção
 
 ## 🤝 Contribuição
 
@@ -175,11 +195,20 @@ Se você encontrar algum problema ou tiver dúvidas:
 3. Teste se o webhook N8N está respondendo
 4. Abra uma issue no repositório
 
+## ✨ Funcionalidades Recentes
+
+- [x] **Dashboard de Configurações**: Aba dedicada para configurações de API
+- [x] **Documentação Integrada**: Exemplos de payload e instruções de configuração
+- [x] **Webhook N8N Melhorado**: Validação de UUID e tratamento de erros
+- [x] **Interface de Administração**: Gerenciamento de agentes e configurações
+- [x] **Testes de Conectividade**: Botão para testar webhook N8N
+
 ## 🔄 Próximas Funcionalidades
 
 - [ ] Notificações em tempo real
 - [ ] Upload de arquivos
 - [ ] Histórico de conversas com busca
 - [ ] Temas personalizáveis
-- [ ] API para integração com outros sistemas
 - [ ] Dashboard de analytics
+- [ ] Integração com mais plataformas de IA
+- [ ] Sistema de backup automático
