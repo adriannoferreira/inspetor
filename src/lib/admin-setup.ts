@@ -20,7 +20,7 @@ export async function checkAdminExists(): Promise<boolean> {
     }
 
     return !!data;
-  } catch {
+  } catch (error) {
     console.error('Erro ao verificar admin existente:', error);
     return false;
   }

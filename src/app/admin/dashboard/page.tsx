@@ -24,7 +24,7 @@ interface ConversationRow {
   id: string;
   created_at: string;
   agent_type: string;
-  profiles?: { email: string | null } | null;
+  profiles: { email: string | null }[];
 }
 
 export default function AdminDashboard() {
@@ -81,11 +81,11 @@ export default function AdminDashboard() {
         const activity: RecentActivity[] = [];
         
         if (recentConversations) {
-          recentConversations.forEach((conv: ConversationRow) => {
+          recentConversations.forEach((conv: any) => {
             activity.push({
               id: conv.id,
               type: 'conversation_created',
-              user_email: conv.profiles?.email || 'Usuário desconhecido',
+              user_email: conv.profiles?.[0]?.email || 'Usuário desconhecido',
               created_at: conv.created_at,
               details: `Conversa com agente ${conv.agent_type}`,
             });

@@ -29,7 +29,7 @@ export default function ChatInput({ onSend, disabled = false, agentId }: ChatInp
 
   useEffect(() => {
     const supabase = getSupabaseClient();
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
       setUserId(data.user?.id ?? null);
     }).catch(() => setUserId(null));
   }, []);
@@ -218,7 +218,6 @@ export default function ChatInput({ onSend, disabled = false, agentId }: ChatInp
           onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
           placeholder={`Digite uma mensagem`}
           className="flex-1 bg-transparent text-white placeholder-[#8696a0] py-3 px-2 outline-none text-sm"
-          rows={1}
         />
       </div>
       

@@ -1,48 +1,59 @@
 "use client";
 import React from 'react';
-import { useChatStore } from '@/stores/chatStore';
-import { ChevronDown } from 'lucide-react';
+import Image from 'next/image';
+import { Agent } from '@/lib/types';
 
-export default function AgentSelector() {
-  const current = useChatStore(s => s.currentAgent);
-  const agents = useChatStore(s => s.agents);
-  const setCurrentAgent = useChatStore(s => s.setCurrentAgent);
+interface AgentSelectorProps {
+  agents: Agent[];
+  selectedAgent: Agent | null;
+  onSelectAgent: (agent: Agent) => void;
+}
 
+
+
+export default function AgentSelector({ agents, selectedAgent, onSelectAgent }: AgentSelectorProps) {
   return (
-    <div className="relative">
-      <div className="flex items-center gap-2 p-2 bg-[#2a3942] rounded-lg hover:bg-[#313d45] transition-colors">
-        <div className={`h-8 w-8 rounded-full flex items-center justify-center ${current.bgColor} overflow-hidden`}>
-          {current.avatar_url ? (
-            <img 
-              src={current.avatar_url} 
-              alt={current.name}
-              className="w-full h-full object-cover rounded-full"
-            />
-          ) : (
-            React.createElement(current.icon, { className: current.color, size: 16 })
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-white text-sm font-medium truncate">{current.name}</p>
-          <p className="text-[#8696a0] text-xs truncate">{current.description}</p>
-        </div>
-        <ChevronDown size={16} className="text-[#8696a0] flex-shrink-0" />
-      </div>
-      
-      <select
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        value={current.id}
-        onChange={(e) => {
-          const agent = agents.find(a => a.id === e.target.value) || agents[0];
-          if (agent) {
-            setCurrentAgent(agent);
-          }
-        }}
-      >
-        {agents.map(a => (
-          <option key={a.id} value={a.id}>{a.name}</option>
+    <div className="bg-white border-b border-gray-200 p-4">
+      <h3 className="text-sm font-medium text-gray-700 mb-3">Selecionar Agente:</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {agents.map((agent) => (
+          <div
+            key={agent.id}
+            className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+              selectedAgent?.id === agent.id
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:bg-gray-50'
+            }`}
+            onClick={() => onSelectAgent(agent)}
+          >
+            <div className="flex items-center space-x-3">
+              {agent.avatar_url ? (
+                <Image
+                  src={agent.avatar_url}
+                  alt={`Avatar do agente ${agent.name}`}
+                  width={40}
+                  height={40}
+                  className="rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                  <span className="text-gray-600 text-sm font-medium">
+                    {agent.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-medium text-gray-900 truncate">
+                  {agent.name}
+                </h4>
+                <p className="text-xs text-gray-500 truncate">
+                  {agent.description}
+                </p>
+              </div>
+            </div>
+          </div>
         ))}
-      </select>
+      </div>
     </div>
   );
 }

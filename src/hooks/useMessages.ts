@@ -54,15 +54,13 @@ export function useMessages(conversationId: string | null, userId: string | null
         // Limpar mensagens atuais e adicionar as do banco
         useChatStore.getState().clearChat();
         
-        result.forEach(msg => {
+        result.forEach((msg: Message) => {
           addMessage({
-            id: msg.id,
             conversation_id: msg.conversation_id,
             content: msg.content,
             is_user: msg.role === 'user',
             agent_id: msg.agent_id,
-            attachments: msg.attachments || [],
-            created_at: msg.created_at
+            attachments: msg.attachments || []
           });
         });
       } else {
@@ -91,20 +89,18 @@ export function useMessages(conversationId: string | null, userId: string | null
       .on(
         'broadcast',
         { event: 'new_message' },
-        (payload) => {
+        (payload: { payload: { conversationId: string; message: Message; userId: string } }) => {
           const { conversationId: msgConvId, message, userId: msgUserId } = payload.payload;
           
           // Verificar se a mensagem é para esta conversa e usuário
           if (msgConvId === conversationId && msgUserId === userId) {
             // Adicionar mensagem do agente
             addMessage({
-              id: message.id,
               conversation_id: message.conversation_id,
               content: message.content,
               is_user: false,
               agent_id: message.agent_id,
-              attachments: message.attachments || [],
-              created_at: message.created_at
+              attachments: message.attachments || []
             });
             
             // Parar indicador de digitação

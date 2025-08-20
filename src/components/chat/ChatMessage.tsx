@@ -1,8 +1,9 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import Image from 'next/image';
 import { useChatStore } from '@/stores/chatStore';
-import { CheckCheck, Download, FileText, Music, Video, Image } from 'lucide-react';
+import { CheckCheck, Download, FileText, Music, Video, Image as ImageIcon } from 'lucide-react';
 import { Attachment } from '@/lib/types';
 
 export default function ChatMessage({ 
@@ -22,7 +23,7 @@ export default function ChatMessage({
     <div className={`flex gap-2 mb-4 px-2 md:px-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
         <div className={`h-8 w-8 rounded-full flex items-center justify-center ${agent.bgColor} flex-shrink-0 mt-1`}>
-          {React.createElement(agent.icon, { className: agent.color, size: 16 })}
+          {agent.icon && React.createElement(agent.icon, { className: agent.color, size: 16 })}
         </div>
       )}
       
@@ -95,7 +96,7 @@ function AttachmentRenderer({ attachment }: { attachment: Attachment }) {
   const getIcon = () => {
     switch (attachment.type) {
       case 'image':
-        return <Image size={16} />;
+        return <ImageIcon size={16} />;
       case 'video':
         return <Video size={16} />;
       case 'audio':
@@ -114,14 +115,16 @@ function AttachmentRenderer({ attachment }: { attachment: Attachment }) {
   if (attachment.type === 'image') {
     return (
       <div className="max-w-xs">
-        <img 
+        <Image 
           src={attachment.url} 
           alt={attachment.filename}
+          width={300}
+          height={200}
           className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
           onClick={() => window.open(attachment.url, '_blank')}
         />
         <div className="mt-1 text-xs text-[#8696a0] flex items-center gap-1">
-          <Image size={12} />
+          <ImageIcon size={12} />
           <span>{attachment.filename}</span>
           <span>•</span>
           <span>{formatFileSize(attachment.size)}</span>

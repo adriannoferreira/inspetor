@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { isoNow } from '@/lib/utils';
+import type { Attachment } from '@/lib/types';
 
 // Configuração do Supabase para uso no servidor
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -17,7 +18,7 @@ interface N8NResponsePayload {
   agent_name: string;
   user_name?: string;
   timestamp?: string;
-  attachments?: any[];
+  attachments?: Attachment[];
   attachments_type?: string;
 }
 
@@ -49,8 +50,8 @@ export async function POST(request: NextRequest) {
       conversation_id, 
       agent_response, 
       agent_name,
-      user_name,
-      timestamp,
+      // user_name, // não utilizado
+      // timestamp, // não utilizado diretamente
       attachments = []
     } = payload;
 
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
         content: agent_response,
         role: 'assistant',
         agent_id: agentId,
-        created_at: timestamp ? new Date(timestamp).toISOString() : isoNow(),
+        created_at: isoNow(),
         attachments: attachments.length > 0 ? attachments : null
       })
       .select()

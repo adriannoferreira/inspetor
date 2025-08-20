@@ -62,7 +62,7 @@ export default function SystemSettings() {
         maintenance_mode: ''
       };
       
-      settingsData.forEach((setting) => {
+      settingsData.forEach((setting: SystemSetting) => {
         if (setting.key in formValues) {
           const key = setting.key as keyof SettingForm;
           formValues[key] = setting.value;

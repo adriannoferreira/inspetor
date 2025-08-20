@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { isoNow } from '@/lib/utils';
+import type { Attachment, Message, N8NWebhookResponse } from '@/lib/types';
 
 // URL do webhook N8N
 const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL!;
+
+// Tipagem do resultado esperado do webhook do N8N
+type WebhookResult = Partial<N8NWebhookResponse> & { response?: string };
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +28,13 @@ export async function POST(request: NextRequest) {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const requestBody = await request.json();
-    const { message, agentId, conversationId, userId, attachments = [] } = requestBody;
+    const { message, agentId, conversationId, userId, attachments = [] } = requestBody as {
+      message: string;
+      agentId: string;
+      conversationId?: string;
+      userId: string;
+      attachments?: Attachment[];
+    };
 
     // Validação dos dados obrigatórios
     if ((!message || message.trim() === '') && (!attachments || attachments.length === 0)) {
@@ -86,14 +96,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Salvar mensagem do usuário
-    const { data: userMessage, error: messageError } = await supabase
+    const { error: messageError } = await supabase
       .from('messages')
       .insert({
         conversation_id: currentConversationId,
         content: message || '[Anexo]',
         role: 'user',
         agent_id: agentId,
-        attachments: attachments,
+        attachments: attachments as Attachment[],
         created_at: isoNow()
       })
       .select()
@@ -125,7 +135,7 @@ export async function POST(request: NextRequest) {
 
     // Determinar tipos de anexos
     const attachmentTypes = attachments && attachments.length > 0
-      ? [...new Set(attachments.map((att: any) => att.type))]
+      ? [...new Set((attachments as Attachment[]).map((att: Attachment) => att.type))]
       : [];
 
     // Enviar para N8N webhook
@@ -141,9 +151,9 @@ export async function POST(request: NextRequest) {
       timestamp: isoNow()
     };
 
-    let webhookResult: any = null;
+    let webhookResult: WebhookResult | null = null;
     // Permite retornar a mensagem salva do assistente para o cliente atualizar a UI
-    let savedAgentMessage: any = null;
+    let savedAgentMessage: Partial<Message> | null = null;
     try {
       const webhookResponse = await fetch(N8N_WEBHOOK_URL, {
         method: 'POST',
@@ -164,7 +174,7 @@ export async function POST(request: NextRequest) {
 
       const text = await webhookResponse.text();
       try {
-        webhookResult = JSON.parse(text);
+        webhookResult = JSON.parse(text) as WebhookResult;
       } catch {
         webhookResult = { response: text };
       }
@@ -195,7 +205,7 @@ export async function POST(request: NextRequest) {
         console.error('Erro ao salvar resposta:', responseError);
       } else if (agentMessage) {
         // Guardar para retorno ao cliente
-        savedAgentMessage = agentMessage;
+        savedAgentMessage = agentMessage as Partial<Message>;
         // Enviar notificação em tempo real
         try {
           const channel = supabase.channel('chat-updates');

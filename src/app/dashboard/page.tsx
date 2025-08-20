@@ -73,13 +73,13 @@ export default function AdminDashboard() {
         const activity: RecentActivity[] = [];
         
         if (recentConversations) {
-          recentConversations.forEach((conv: { id: string; user_id: string; title?: string | null; created_at: string; }) => {
+          recentConversations.forEach((conv: { id: string; user_id: string; title?: string | null; created_at: string; agent_type?: string; }) => {
             activity.push({
               id: conv.id,
               type: 'conversation_created',
-              user_email: conv.profiles?.email || 'Usuário desconhecido',
+              user_email: 'Usuário desconhecido',
               created_at: conv.created_at,
-              details: `Conversa com agente ${conv.agent_type}`,
+              details: `Conversa com agente ${conv.agent_type || 'desconhecido'}`,
             });
           });
         }

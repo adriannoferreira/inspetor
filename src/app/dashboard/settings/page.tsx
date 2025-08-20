@@ -91,7 +91,7 @@ export default function SystemSettings() {
         }
       });
       
-      setSettings(settingsObj);
+      setSettings(settingsObj as unknown as SettingsForm);
     } catch (error) {
       console.error('Erro ao buscar configurações:', error);
     } finally {
@@ -303,7 +303,7 @@ export default function SystemSettings() {
       }
     } catch (error) {
       console.error('Erro ao testar webhook:', error);
-      alert(`❌ Erro ao conectar com o webhook: ${error.message}\n\nVerifique a URL e tente novamente.`);
+      alert(`❌ Erro ao conectar com o webhook: ${(error as Error).message}\n\nVerifique a URL e tente novamente.`);
     } finally {
       setTestingWebhook(false);
     }
@@ -751,11 +751,11 @@ export default function SystemSettings() {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end space-x-2">
                           <button
-                            onClick={() => openPayloadModal(agent)}
+                            onClick={() => openAgentModal(agent)}
                             className="text-purple-600 hover:text-purple-900"
-                            title="Editar Payload"
+                            title="Editar Agente"
                           >
-                            <Code className="h-4 w-4" />
+                            <Edit className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => openAgentModal(agent)}

@@ -16,13 +16,11 @@ function createSupabaseServerClient(req: NextRequest, res: NextResponse) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get: (name: string) => req.cookies.get(name)?.value,
-        getAll: () => req.cookies.getAll(),
-        set: (name: string, value: string, options: CookieOptions) => {
-          res.cookies.set(name, value, options);
-        },
-        remove: (name: string, options: CookieOptions) => {
-          res.cookies.set(name, '', { ...options, maxAge: 0 });
+        getAll: () => req.cookies.getAll().map(cookie => ({ name: cookie.name, value: cookie.value })),
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            res.cookies.set(name, value, options);
+          });
         },
       },
     }

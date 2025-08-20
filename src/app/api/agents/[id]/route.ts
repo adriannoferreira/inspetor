@@ -11,11 +11,11 @@ const getClient = () => {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = getClient();
-    const { id } = params;
+    const { id } = await params;
 
     const { data: agent, error } = await supabase
       .from('agents')
@@ -43,11 +43,11 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = getClient();
-    const { id } = params;
+    const { id } = await params;
     
     const body = await request.json();
     const { name, description, avatar_url, payload, is_active } = body;
@@ -93,11 +93,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = getClient();
-    const { id } = params;
+    const { id } = await params;
 
     const { error } = await supabase
       .from('agents')

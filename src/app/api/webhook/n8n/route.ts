@@ -1,155 +1,163 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { isoNow } from '@/lib/utils';
-
-// Configuração do Supabase para uso no servidor
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-// Chave secreta para validar webhooks (opcional, mas recomendado)
-const WEBHOOK_SECRET = process.env.N8N_WEBHOOK_SECRET;
+import { supabase } from '@/lib/supabase';
+import { N8NWebhookPayload } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
   try {
-    // Validação opcional do webhook secret
-    if (WEBHOOK_SECRET) {
-      const authHeader = request.headers.get('authorization');
-      if (authHeader !== `Bearer ${WEBHOOK_SECRET}`) {
-        return NextResponse.json(
-          { error: 'Não autorizado' },
-          { status: 401 }
-        );
-      }
-    }
+    const payload: N8NWebhookPayload = await request.json();
+    console.log('📨 Webhook N8N recebido:', payload);
 
-    const { 
-      conversationId, 
-      response, 
-      agentId, 
-      userId, 
-      messageId 
-    } = await request.json();
-
-    // Validação dos dados obrigatórios
-    if (!conversationId || !response) {
+    // Validar payload
+    if (!payload.user_id || !payload.agent_id || !payload.message) {
+      console.error('❌ Payload inválido:', payload);
       return NextResponse.json(
-        { error: 'Dados obrigatórios: conversationId, response' },
+        { error: 'Payload inválido. user_id, agent_id e message são obrigatórios.' },
         { status: 400 }
       );
     }
 
-    // Verificar se a conversa existe
-    const { data: conversation, error: conversationError } = await supabase
-      .from('conversations')
-      .select('id, user_id')
-      .eq('id', conversationId)
+    // Usar a instância do Supabase
+
+    // Verificar se o usuário existe
+    const { data: user, error: userError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', payload.user_id)
       .single();
 
-    if (conversationError || !conversation) {
-      console.error('Conversa não encontrada:', conversationError);
+    if (userError || !user) {
+      console.error('❌ Usuário não encontrado:', payload.user_id);
       return NextResponse.json(
-        { error: 'Conversa não encontrada' },
+        { error: 'Usuário não encontrado' },
         { status: 404 }
       );
     }
 
-    // Salvar resposta do agente
-    const { data: newMessage, error: messageError } = await supabase
+    // Verificar se o agente existe
+    const { data: agent, error: agentError } = await supabase
+      .from('agents')
+      .select('id, name')
+      .eq('id', payload.agent_id)
+      .single();
+
+    if (agentError || !agent) {
+      console.error('❌ Agente não encontrado:', payload.agent_id);
+      return NextResponse.json(
+        { error: 'Agente não encontrado' },
+        { status: 404 }
+      );
+    }
+
+    // Criar ou buscar conversa existente
+    let conversationId = payload.conversation_id;
+    
+    if (!conversationId) {
+      // Buscar conversa existente entre usuário e agente
+      const { data: existingConversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('user_id', payload.user_id)
+        .eq('agent_id', payload.agent_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (existingConversation) {
+        conversationId = existingConversation.id;
+      } else {
+        // Criar nova conversa
+        const { data: newConversation, error: conversationError } = await supabase
+          .from('conversations')
+          .insert({
+            user_id: payload.user_id,
+            agent_id: payload.agent_id,
+            title: `Conversa com ${agent.name}`
+          })
+          .select('id')
+          .single();
+
+        if (conversationError || !newConversation) {
+          console.error('❌ Erro ao criar conversa:', conversationError);
+          return NextResponse.json(
+            { error: 'Erro ao criar conversa' },
+            { status: 500 }
+          );
+        }
+
+        conversationId = newConversation.id;
+      }
+    }
+
+    // Salvar mensagem do usuário
+    const { data: userMessage, error: userMessageError } = await supabase
       .from('messages')
       .insert({
         conversation_id: conversationId,
-        content: response,
-        role: 'assistant',
-        agent_id: agentId,
-        created_at: isoNow()
+        content: payload.message,
+        role: 'user',
+        user_id: payload.user_id,
+        agent_id: payload.agent_id,
+        attachments: payload.attachments || []
       })
-      .select()
+      .select('*')
       .single();
 
-    if (messageError) {
-      console.error('Erro ao salvar mensagem:', messageError);
+    if (userMessageError) {
+      console.error('❌ Erro ao salvar mensagem do usuário:', userMessageError);
       return NextResponse.json(
         { error: 'Erro ao salvar mensagem' },
         { status: 500 }
       );
     }
 
-    // Atualizar timestamp da conversa
-    await supabase
-      .from('conversations')
-      .update({ updated_at: isoNow() })
-      .eq('id', conversationId);
+    console.log('✅ Mensagem do usuário salva:', userMessage.id);
 
-    // Enviar notificação em tempo real via Supabase Realtime
-    try {
-      // É necessário assinar o canal antes de enviar um broadcast
-      const channel = supabase.channel('chat-updates');
+    // Preparar dados para envio ao N8N
+    const n8nPayload = {
+      user_id: payload.user_id,
+      agent_id: payload.agent_id,
+      conversation_id: conversationId,
+      message: payload.message,
+      attachments: payload.attachments || [],
+      timestamp: new Date().toISOString()
+    };
 
-      await new Promise<void>((resolve, reject) => {
-        let settled = false;
-        const timeout = setTimeout(() => {
-          if (!settled) {
-            settled = true;
-            console.warn('Timeout ao tentar assinar o canal Realtime');
-            resolve();
-          }
-        }, 1500);
-
-        channel.subscribe((status) => {
-          if (status === 'SUBSCRIBED' && !settled) {
-            settled = true;
-            clearTimeout(timeout);
-            resolve();
-          } else if (status === 'CHANNEL_ERROR' && !settled) {
-            settled = true;
-            clearTimeout(timeout);
-            reject(new Error('Erro ao assinar o canal Realtime'));
-          }
+    // Enviar para N8N se webhook_url estiver disponível
+    const webhookUrl = process.env.N8N_WEBHOOK_URL;
+    if (webhookUrl) {
+      try {
+        const n8nResponse = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(n8nPayload)
         });
-      });
 
-      const sendResult = await channel.send({
-        type: 'broadcast',
-        event: 'new_message',
-        payload: {
-          conversationId,
-          message: newMessage,
-          agentId,
-          userId: conversation.user_id
+        if (!n8nResponse.ok) {
+          console.error('❌ Erro ao enviar para N8N:', n8nResponse.status);
+        } else {
+          console.log('✅ Payload enviado para N8N com sucesso');
         }
-      });
-
-      if (sendResult !== 'ok') {
-        console.warn('Falha ao enviar broadcast Realtime:', sendResult);
+      } catch (n8nError) {
+        console.error('❌ Erro na requisição para N8N:', n8nError);
       }
-
-      await channel.unsubscribe();
-    } catch (realtimeError) {
-      console.warn('Erro ao enviar notificação em tempo real:', realtimeError);
-      // Não falha a operação se o realtime falhar
     }
 
     return NextResponse.json({
       success: true,
-      messageId: newMessage.id,
-      message: 'Resposta salva com sucesso'
+      message: 'Webhook processado com sucesso',
+      data: {
+        conversation_id: conversationId,
+        user_message_id: userMessage.id
+      }
     });
 
   } catch (error) {
-    console.error('Erro no webhook N8N:', error);
+    console.error('❌ Erro no webhook N8N:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
-}
-
-// Método GET para verificar se o webhook está funcionando
-export async function GET() {
-  return NextResponse.json({
-    status: 'ok',
-    message: 'Webhook N8N está funcionando',
-    timestamp: isoNow()
-  });
 }
